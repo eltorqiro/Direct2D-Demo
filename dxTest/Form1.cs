@@ -12,11 +12,14 @@ using SharpDX;
 using SharpDX.DXGI;
 using SharpDX.Direct2D1;
 
+using SharpDX.Windows;
 
 namespace dxTest
 {
     public partial class Form1 : Form
     {
+        private Control renderControl;
+
         // directx objects
         private WindowRenderTarget target;
         private SharpDX.Direct2D1.Factory factory;
@@ -26,7 +29,7 @@ namespace dxTest
 
         // visual tools
         LinearGradientBrush bandBrush;
-
+        
         private Random random;
         private int cycleCount = 0;
 
@@ -61,7 +64,6 @@ namespace dxTest
         {
             target.BeginDraw();
 
-            
             if (cycleCount > 0xff)
             {
                 cycleCount = 0;
@@ -89,7 +91,7 @@ namespace dxTest
 
             int bandPercentage;
 
-            int bandCount = 10;
+            int bandCount = 128;
             int gap = 1;
             float bandWidth = (target.Size.Width + gap) / bandCount;
 
@@ -111,6 +113,17 @@ namespace dxTest
 
         private void createDxTarget()
         {
+            renderControl = new Control()
+            {
+                Width = this.ClientSize.Width,
+                Height = this.ClientSize.Height,
+                Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom
+            };
+
+            renderControl.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(onDoubleClick);
+
+            this.Controls.Add(renderControl);
+
             factory = new SharpDX.Direct2D1.Factory();
 
             RenderTargetProperties targetProperties = new RenderTargetProperties()
@@ -125,17 +138,13 @@ namespace dxTest
 
             HwndRenderTargetProperties windowProperties = new HwndRenderTargetProperties()
             {
-                Hwnd = this.Handle,
-                PixelSize = new SharpDX.Size2(this.ClientSize.Width, this.ClientSize.Height),
+                Hwnd = renderControl.Handle,
+                PixelSize = new SharpDX.Size2(renderControl.ClientSize.Width, renderControl.ClientSize.Height),
                 PresentOptions = PresentOptions.None
             };
 
             target = new WindowRenderTarget(factory, targetProperties, windowProperties);
 
-            this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
-            this.SetStyle(ControlStyles.Opaque, true);
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
-            this.SetStyle(ControlStyles.UserPaint, true);
             /*
             this.SetStyle(
                 ControlStyles.AllPaintingInWmPaint |
@@ -149,7 +158,7 @@ namespace dxTest
 
         private void initialiseTarget()
         {
-            target.Resize(new SharpDX.Size2(this.ClientSize.Width, this.ClientSize.Height));
+            target.Resize(new SharpDX.Size2(renderControl.Width, renderControl.Height));
             createBandBrush();
         }
 
@@ -171,7 +180,11 @@ namespace dxTest
         }
 
         private void onResize(object sender, EventArgs e)
-        {
+        {/*
+            using (renderControl) {
+                Width = this.ClientSize.Width;
+                Height = this.ClientSize.Height;
+            }*/
             initialiseTarget();
         }
 
@@ -186,6 +199,21 @@ namespace dxTest
             factory.Dispose();
 
             base.Dispose();
+        }
+
+        private void onDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (FormBorderStyle == FormBorderStyle.None)
+            {
+                FormBorderStyle = FormBorderStyle.Sizable;
+                WindowState = FormWindowState.Normal;
+            }
+
+            else
+            {
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Maximized;
+            }
         }
     }
 }
